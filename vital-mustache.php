@@ -82,10 +82,17 @@ class VitalMustache {
       printf( '<div class="%1$s"><p>%2$s</p></div>', $class, $message );
     }
 
+    public static function __activation_error(){
+      $class = 'notice notice-error';
+      $message = __( 'Error activating the plugin :(');
+
+      printf( '<div class="%1$s"><p>%2$s</p></div>', $class, $message );
+    }
+
     private static function initialize(){
       $opt = get_option('vital_mustache_option');
       $template_folder = $opt['vital_mustache_template_folder'];
-      if($template_folder === FALSE){
+      if(!$template_folder){
         $template_folder = VitalMustache::$DEFAULT_TEMPLATE_FOLDER;
       }
       $template_folder_path = sprintf('%s/%s', get_template_directory(), $template_folder);
@@ -94,10 +101,14 @@ class VitalMustache {
       if(!$dir){
         add_action('admin_notices', array('VitalMustache', '__no_template_folder'));
       } else {
-        VitalMustache::$engine = new Mustache_Engine(array(
-          'loader' => new Mustache_Loader_FilesystemLoader($dir),
-          'partials_loader' => new Mustache_Loader_FilesystemLoader($dir.'/partials'),
-        ));
+        try{
+          VitalMustache::$engine = new Mustache_Engine(array(
+            'loader' => new Mustache_Loader_FilesystemLoader($dir),
+            'partials_loader' => new Mustache_Loader_FilesystemLoader($dir.'/partials'),
+          ));
+        } catch(Exeception $e){
+
+        }
       }
     }
 
