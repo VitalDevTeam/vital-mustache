@@ -29,9 +29,6 @@
 if (! defined('ABSPATH')) exit;
 
 class VitalMustache {
-
-    public static $DEFAULT_TEMPLATE_FOLDER = 'mustache-templates';
-
     private $plugin_path;
     private $plugin_url;
 
@@ -41,26 +38,19 @@ class VitalMustache {
      * Initialize plugin
      */
     public function __construct() {
-
         $this->plugin_path    = plugin_dir_path(__FILE__);
         $this->plugin_url     = plugin_dir_url(__FILE__);
 
-        require $this->plugin_path . 'admin.php';
+        register_activation_hook( __FILE__, array('VitalMustache', 'activate'));
 
         $mustache_path = $this->plugin_path . '/lib/mustache/mustache.php';
         if(file_exists($mustache_path)){
           require_once($mustache_path);
-          if(!class_exists('Mustache_Engine')){
-            add_action('admin_notices', array('VitalMustache', '__no_mustache'));
-          } else {
-            VitalMustache::initialize();
-          }
-
+          VitalMustache::initialize();
         } else {
           add_action('admin_notices', array('VitalMustache', '__no_mustache'));
         }
 
-        add_filter('plugin_action_links_' . plugin_basename(__FILE__), array($this, 'add_action_link'));
     }
 
     public static function __no_mustache(){
@@ -90,59 +80,31 @@ class VitalMustache {
     }
 
     private static function initialize(){
-      $opt = get_option('vital_mustache_option');
-      $template_folder = $opt['vital_mustache_template_folder'];
-      if(!$template_folder){
-        $template_folder = VitalMustache::$DEFAULT_TEMPLATE_FOLDER;
-      }
-      $template_folder_path = sprintf('%s/%s', get_template_directory(), $template_folder);
-      $dir = realpath($template_folder_path);
+      $dir = sprintf('%s/mustache-templates', get_template_directory());
+      VitalMustache::$engine = new Mustache_Engine(array(
+        'loader' => new Mustache_Loader_FilesystemLoader($dir),
+        'partials_loader' => new Mustache_Loader_FilesystemLoader($dir.'/partials'),
+      ));
 
-      if(!$dir){
-        add_action('admin_notices', array('VitalMustache', '__no_template_folder'));
-      } else {
-        try{
-          VitalMustache::$engine = new Mustache_Engine(array(
-            'loader' => new Mustache_Loader_FilesystemLoader($dir),
-            'partials_loader' => new Mustache_Loader_FilesystemLoader($dir.'/partials'),
-          ));
-        } catch(Exeception $e){
-
-        }
-      }
-    }
-
-    /**
-     * Add link to settings on Plugins page
-     */
-    public function add_action_link($links) {
-        $custom_link = array(
-           '<a href="' . admin_url('options-general.php?page=vital_mustache') . '">Settings</a>',
-           );
-        return array_merge($custom_link, $links);
+      require_once(plugin_dir_path(__FILE__) . '/public/functions.php')
     }
 
     public static function activate(){
-        $mustache_path = plugin_dir_path(__FILE__) . '/lib/mustache/bin/build_bootstrap.php';
+      VitalMustache::BuildMustache();
+      VitalMustache::BuildTemplateFolders();
+    }
 
-        ob_start();
-        include_once($mustache_path);
-        $result = ob_get_clean();
+    private static function BuildMustache(){
+      ob_start();
+      $mustache_path = plugin_dir_path(__FILE__) . '/lib/mustache/bin/build_bootstrap.php';
+      require_once($mustache_path);
+      ob_end_flush();
+    }
+
+    private static function BuildTemplateFolders(){
+      $template_folder = sprintf('%s/mustache-templates/partials', get_template_directory());
+      mkdir($template_folder, 0755, true);
     }
 }
 
-register_activation_hook( __FILE__, array('VitalMustache', 'activate'));
 new VitalMustache();
-
-function render($template, $data, $return_string = false){
-  $output = null;
-  if($template && VitalMustache::$engine){
-    $output = VitalMustache::$engine->render($template, $data);
-
-    if(!$return_string){
-      echo $output;
-    }
-  }
-
-  return $output;
-}
