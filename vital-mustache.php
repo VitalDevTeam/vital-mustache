@@ -86,7 +86,7 @@ class VitalMustache {
         'partials_loader' => new Mustache_Loader_FilesystemLoader($dir.'/partials'),
       ));
 
-      require_once(plugin_dir_path(__FILE__) . '/public/functions.php')
+      require_once(plugin_dir_path(__FILE__) . '/public/functions.php');
     }
 
     public static function activate(){
