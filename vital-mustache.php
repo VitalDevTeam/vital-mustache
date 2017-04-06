@@ -90,15 +90,15 @@ class VitalMustache {
     }
 
     public static function activate(){
+      ob_start();
       VitalMustache::BuildMustache();
       VitalMustache::BuildTemplateFolders();
+      ob_end_clean();
     }
 
     private static function BuildMustache(){
-      ob_start();
       $mustache_path = plugin_dir_path(__FILE__) . '/lib/mustache/bin/build_bootstrap.php';
       require_once($mustache_path);
-      ob_end_flush();
     }
 
     private static function BuildTemplateFolders(){
